@@ -107,6 +107,11 @@ def alt[T1, E1](parsers: Tuple[StrParser[T1, E1]]) -> StrParser[T1, E1]:
     return parser
 
 
+@dataclass
+class ManyError:
+    pass
+
+
 def many0[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
     def new_parser(s: str) -> StrParserResult[list[T], E]:
         result = []
@@ -114,6 +119,23 @@ def many0[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
             r = parser(s)
             if r.return_value is None:
                 return StrParserResult(result, None, s)
+            else:
+                result.append(r.return_value)
+                s = r.remain
+    return new_parser
+
+
+def many1[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
+    def new_parser(s: str) -> StrParserResult[list[T], E]:
+        start_s = s
+        result = []
+        while True:
+            r = parser(s)
+            if r.return_value is None:
+                if len(result) == 1:
+                    return StrParserResult(result, None, s)
+                else:
+                    return StrParserResult(None, ManyError(), start_s)
             else:
                 result.append(r.return_value)
                 s = r.remain
