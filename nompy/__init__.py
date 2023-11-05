@@ -90,10 +90,52 @@ def sequence3[T1, E1, T2, E2, T3, E3](parsers: Tuple[StrParser[T1, E1], StrParse
                     return StrParserResult((r1.return_value, r2.return_value, r3.return_value), None, r3.remain)
     return parser
 
+@dataclass
+class AltParserError:
+    child_errors: list[Any]
+
+
+def alt[T1, E1](parsers: Tuple[StrParser[T1, E1]]) -> StrParser[T1, E1]:
+    def parser(s: str) -> StrParserResult[T1, E1]:
+        errs = []
+        for p in parsers:
+            ret = p(s)
+            if ret.return_value is not None:
+                return ret
+            errs.append(ret.error)
+        return StrParserResult(None, AltParserError(errs), s)
+    return parser
+
+
+def many0[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
+    def new_parser(s: str) -> StrParserResult[list[T], E]:
+        result = []
+        while True:
+            r = parser(s)
+            if r.return_value is None:
+                return StrParserResult(result, None, s)
+            else:
+                result.append(r.return_value)
+                s = r.remain
+    return new_parser
+
 
 @dataclass
 class TakeWhileError:
     pass
+
+
+def take_while[T, E](cond: Callable[[str], bool]) -> StrParser[str, TakeWhileError]:
+    def parser(s: str) -> StrParserResult[str, TakeWhileError]:
+        l = s
+        result = ""
+        for i in range(len(s)):
+            if cond(s[i]):
+                result += s[i]
+            else:
+                break
+        return StrParserResult(result, None, s[len(result):])
+    return parser
 
 def take_while_m_n[T, E](m: int, n: int, cond: Callable[[str], bool]) -> StrParser[str, TakeWhileError]:
     def parser(s: str) -> StrParserResult[str, TakeWhileError]:

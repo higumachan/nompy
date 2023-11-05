@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from nompy import tag, StrParserResult, TagParserError, sequence, sequence2, take_while_m_n, TakeWhileError, sequence3, \
     parser_map_exception
 
@@ -22,10 +24,16 @@ def test_take_while():
     assert parser("1a234") == StrParserResult(None, TakeWhileError(), "1a234")
 
 def test_hex_color_parser():
+    @dataclass
+    class Color:
+        r: int
+        g: int
+        b: int
+
     hex_2digit = parser_map_exception(take_while_m_n(2, 2, lambda c: c in "0123456789abcdefABCDEF"), lambda x: int(x, 16))
     parser = parser_map_exception(sequence2((tag("#"), sequence3(
         (hex_2digit,
         hex_2digit,
         hex_2digit)
-    ))), lambda x: x[1])
-    assert parser("#2F14DF") == StrParserResult((47, 20, 223), None, "")
+    ))), lambda x: Color(r=x[1][0], g=x[1][1], b=x[1][2]))
+    assert parser("#2F14DF") == StrParserResult(Color(r=47, g=20, b=223), None, "")

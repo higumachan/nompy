@@ -6,7 +6,7 @@ authors = ["Yuta Hinokuma <higumachan@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
