@@ -52,7 +52,7 @@ def sequence(parsers: Tuple[*StrParser[Ts, Es]]) -> StrParser[Tuple[*Ts], TupleP
         result = []
         for i, p in enumerate(parsers):
             r = p(s)
-            if r.return_value is None:
+            if r.error is not None:
                 return StrParserResult(None, TupleParserError(i), s)
             else:
                 result.append(r.return_value)
@@ -76,15 +76,15 @@ def sequence2[T1, E1, T2, E2](parsers: Tuple[StrParser[T1, E1], StrParser[T2, E2
 def sequence3[T1, E1, T2, E2, T3, E3](parsers: Tuple[StrParser[T1, E1], StrParser[T2, E2], StrParser[T3, E3]]) -> StrParser[Tuple[T1, T2, T3], TupleParserError]:
     def parser(s: str) -> StrParserResult[Tuple[T1, T2, T3], TupleParserError]:
         r1 = parsers[0](s)
-        if r1.return_value is None:
+        if r1.error is not None:
             return StrParserResult(None, TupleParserError(), s)
         else:
             r2 = parsers[1](r1.remain)
-            if r2.return_value is None:
+            if r2.error is not None:
                 return StrParserResult(None, TupleParserError(), s)
             else:
                 r3 = parsers[2](r2.remain)
-                if r3.return_value is None:
+                if r3.error is not None:
                     return StrParserResult(None, TupleParserError(), s)
                 else:
                     return StrParserResult((r1.return_value, r2.return_value, r3.return_value), None, r3.remain)
@@ -100,7 +100,7 @@ def alt[T1, E1](parsers: Tuple[StrParser[T1, E1]]) -> StrParser[T1, E1]:
         errs = []
         for p in parsers:
             ret = p(s)
-            if ret.return_value is not None:
+            if ret.error is None:
                 return ret
             errs.append(ret.error)
         return StrParserResult(None, AltParserError(errs), s)
@@ -117,7 +117,7 @@ def many0[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
         result = []
         while True:
             r = parser(s)
-            if r.return_value is None:
+            if r.error is not None:
                 return StrParserResult(result, None, s)
             else:
                 result.append(r.return_value)
@@ -131,7 +131,7 @@ def many1[T, E](parser: StrParser[T, E]) -> StrParser[list[T], E]:
         result = []
         while True:
             r = parser(s)
-            if r.return_value is None:
+            if r.error is not None:
                 if len(result) == 1:
                     return StrParserResult(result, None, s)
                 else:
@@ -181,7 +181,7 @@ def take_while_m_n[T, E](m: int, n: int, cond: Callable[[str], bool]) -> StrPars
 def parser_map[T1, E, T2](parser: StrParser[T1, E], f: Callable[[T1], T2]) -> StrParser[T2, E]:
     def new_parser(s: str) -> StrParserResult[T2, E]:
         r = parser(s)
-        if r.return_value is None:
+        if r.error is not None:
             return StrParserResult(None, r.error, r.remain)
         else:
             return StrParserResult(f(r.return_value), None, r.remain)
@@ -195,7 +195,7 @@ class MapExceptionError:
 def parser_map_exception[T1, E1, T2](parser: StrParser[T1, E1], f: Callable[[T1], T2]) -> StrParser[T2, MapExceptionError | E1]:
     def new_parser(s: str) -> StrParserResult[T2, MapExceptionError | E1]:
         r = parser(s)
-        if r.return_value is None:
+        if r.error is not None:
             return StrParserResult(None, r.error, r.remain)
         else:
             try:
