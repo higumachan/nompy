@@ -37,3 +37,4 @@ def test_hex_color_parser():
         hex_2digit)
     ))), lambda x: Color(r=x[1][0], g=x[1][1], b=x[1][2]))
     assert parser("#2F14DF") == StrParserResult(Color(r=47, g=20, b=223), None, "")
+

@@ -21,7 +21,7 @@ class TagParserError:
 
 @dataclass
 class TupleParserError:
-    pass
+    index: int
 
 type StrParser[V, E] = Callable[[str], StrParserResult[V, E]]
 
@@ -50,10 +50,10 @@ Es = TypeVarTuple("Es")
 def sequence(parsers: Tuple[*StrParser[Ts, Es]]) -> StrParser[Tuple[*Ts], TupleParserError]:
     def parser(s: str) -> StrParserResult[Tuple[*Ts], TupleParserError]:
         result = []
-        for p in parsers:
+        for i, p in enumerate(parsers):
             r = p(s)
             if r.return_value is None:
-                return StrParserResult(None, TupleParserError(), s)
+                return StrParserResult(None, TupleParserError(i), s)
             else:
                 result.append(r.return_value)
                 s = r.remain
@@ -63,12 +63,12 @@ def sequence(parsers: Tuple[*StrParser[Ts, Es]]) -> StrParser[Tuple[*Ts], TupleP
 def sequence2[T1, E1, T2, E2](parsers: Tuple[StrParser[T1, E1], StrParser[T2, E2]]) -> StrParser[Tuple[T1, T2], TupleParserError]:
     def parser(s: str) -> StrParserResult[Tuple[T1, T2], TupleParserError]:
         r1 = parsers[0](s)
-        if r1.return_value is None:
-            return StrParserResult(None, TupleParserError(), s)
+        if r1.error is not None:
+            return StrParserResult(None, TupleParserError(0), s)
         else:
             r2 = parsers[1](r1.remain)
-            if r2.return_value is None:
-                return StrParserResult(None, TupleParserError(), s)
+            if r2.error is not None:
+                return StrParserResult(None, TupleParserError(1), s)
             else:
                 return StrParserResult((r1.return_value, r2.return_value), None, r2.remain)
     return parser
